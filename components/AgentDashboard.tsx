@@ -1,15 +1,14 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import Link from 'next/link';
 import {
   Bar, BarChart, CartesianGrid, ComposedChart, Legend,
   Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import type { DashboardData, KpiSummary, MonthlyDataPoint } from '@/lib/types';
+import type { AgentData, KpiSummary, MonthlyDataPoint } from '@/lib/types';
 import Sidebar from '@/components/Sidebar';
 import PerformancePulse from '@/components/PerformancePulse';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function deltaStyle(delta: number) {
   return delta >= 0 ? 'text-emerald-400' : 'text-red-400';
@@ -20,8 +19,6 @@ function fmtTs(iso: string) {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 }
-
-// ── KPI card ──────────────────────────────────────────────────────────────────
 
 function KpiCard({ label, kpi }: { label: string; kpi: KpiSummary }) {
   const sign = kpi.delta >= 0 ? '↑' : '↓';
@@ -35,8 +32,6 @@ function KpiCard({ label, kpi }: { label: string; kpi: KpiSummary }) {
     </div>
   );
 }
-
-// ── Shared chart styles ───────────────────────────────────────────────────────
 
 const GRID = { stroke: '#1a2840', strokeDasharray: '3 3' };
 const AXIS = {
@@ -64,19 +59,17 @@ function ChartTip({ active, payload, label }: {
   );
 }
 
-// ── Charts ────────────────────────────────────────────────────────────────────
-
 function Charts({ monthly }: { monthly: MonthlyDataPoint[] }) {
   return (
     <div className="space-y-6">
       <div className="bg-[#111e33] border border-slate-700/50 rounded-xl p-5">
         <h3 className="text-sm font-semibold text-white">Call Acceptance Rate</h3>
-        <p className="text-[11px] text-slate-500 mt-0.5 mb-4">Monthly average · answered ÷ (answered + abandoned)</p>
-        <ResponsiveContainer width="100%" height={220}>
+        <p className="text-[11px] text-slate-500 mt-0.5 mb-4">Monthly average</p>
+        <ResponsiveContainer width="100%" height={200}>
           <LineChart data={monthly} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
             <CartesianGrid {...GRID} />
             <XAxis dataKey="month" {...AXIS} />
-            <YAxis domain={[60, 100]} tickFormatter={(v) => `${v}%`} {...AXIS} />
+            <YAxis domain={[50, 100]} tickFormatter={(v) => `${v}%`} {...AXIS} />
             <Tooltip content={<ChartTip />} />
             <Line type="monotone" dataKey="callAcceptanceRate" name="Acceptance Rate"
               stroke="#3b82f6" strokeWidth={2}
@@ -88,12 +81,12 @@ function Charts({ monthly }: { monthly: MonthlyDataPoint[] }) {
 
       <div className="bg-[#111e33] border border-slate-700/50 rounded-xl p-5">
         <h3 className="text-sm font-semibold text-white">Schedule Adherence</h3>
-        <p className="text-[11px] text-slate-500 mt-0.5 mb-4">Monthly average · WFM module</p>
-        <ResponsiveContainer width="100%" height={220}>
+        <p className="text-[11px] text-slate-500 mt-0.5 mb-4">Monthly average</p>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={monthly} margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
             <CartesianGrid {...GRID} />
             <XAxis dataKey="month" {...AXIS} />
-            <YAxis domain={[60, 100]} tickFormatter={(v) => `${v}%`} {...AXIS} />
+            <YAxis domain={[50, 100]} tickFormatter={(v) => `${v}%`} {...AXIS} />
             <Tooltip content={<ChartTip />} />
             <Bar dataKey="scheduleAdherence" name="Adherence" fill="#6366f1"
               radius={[3, 3, 0, 0]} maxBarSize={40} />
@@ -103,12 +96,12 @@ function Charts({ monthly }: { monthly: MonthlyDataPoint[] }) {
 
       <div className="bg-[#111e33] border border-slate-700/50 rounded-xl p-5">
         <h3 className="text-sm font-semibold text-white">QA Score &amp; Call Volume</h3>
-        <p className="text-[11px] text-slate-500 mt-0.5 mb-4">Monthly · QM module · left axis = score, right axis = volume</p>
-        <ResponsiveContainer width="100%" height={220}>
+        <p className="text-[11px] text-slate-500 mt-0.5 mb-4">Monthly · left axis = score, right axis = volume</p>
+        <ResponsiveContainer width="100%" height={200}>
           <ComposedChart data={monthly} margin={{ top: 4, right: 40, bottom: 4, left: 0 }}>
             <CartesianGrid {...GRID} />
             <XAxis dataKey="month" {...AXIS} />
-            <YAxis yAxisId="score" domain={[60, 100]} tickFormatter={(v) => `${v}%`} {...AXIS} />
+            <YAxis yAxisId="score" domain={[50, 100]} tickFormatter={(v) => `${v}%`} {...AXIS} />
             <YAxis yAxisId="volume" orientation="right" {...AXIS} />
             <Tooltip content={<ChartTip />} />
             <Legend wrapperStyle={{ fontSize: 11, color: '#64748b', paddingTop: 8 }} />
@@ -125,16 +118,14 @@ function Charts({ monthly }: { monthly: MonthlyDataPoint[] }) {
   );
 }
 
-// ── Root component ────────────────────────────────────────────────────────────
-
-export default function Dashboard({ initialData }: { initialData: DashboardData }) {
-  const [data, setData] = useState<DashboardData>(initialData);
+export default function AgentDashboard({ initialData }: { initialData: AgentData }) {
+  const [data, setData] = useState<AgentData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const resp = await fetch('/api/metrics');
+      const resp = await fetch(`/api/agents/${data.agent.id}`);
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       setData(await resp.json());
     } catch (err) {
@@ -142,15 +133,21 @@ export default function Dashboard({ initialData }: { initialData: DashboardData 
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [data.agent.id]);
 
   return (
     <div className="flex min-h-screen bg-[#0d1526] text-slate-100">
       <Sidebar />
       <main className="ml-[220px] flex-1 p-8 overflow-y-auto">
+        {/* Breadcrumb + header */}
+        <div className="mb-1">
+          <Link href="/agents" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            ← All Agents
+          </Link>
+        </div>
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h1 className="text-xl font-bold text-white">Team Performance</h1>
+            <h1 className="text-xl font-bold text-white">{data.agent.name}</h1>
             <p className="text-slate-500 text-xs mt-1">
               Rolling 26 weeks · updated {fmtTs(data.lastUpdated)}
             </p>

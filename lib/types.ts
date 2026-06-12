@@ -30,3 +30,18 @@ export interface DashboardData {
   };
   lastUpdated: string;
 }
+
+export interface Agent {
+  id: string;   // url-safe slug, e.g. "sarah-chen"
+  name: string;
+}
+
+export interface AgentSummary extends Agent {
+  summary: DashboardData['summary'];
+  avgCallVolume: number; // weekly average
+}
+
+// Full per-agent data — same shape as DashboardData plus identity.
+export interface AgentData extends DashboardData {
+  agent: Agent;
+}

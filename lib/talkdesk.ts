@@ -7,8 +7,8 @@
  * Set USE_MOCK_DATA=true in .env.local to skip real API calls during dev.
  */
 
-import type { DashboardData } from './types';
-import { generateMockData } from './mock';
+import type { AgentData, AgentSummary, DashboardData } from './types';
+import { generateAgentData, generateAgentList, generateMockData } from './mock';
 
 // ── Token cache ───────────────────────────────────────────────────────────────
 
@@ -188,4 +188,50 @@ export async function fetchMetrics(): Promise<DashboardData> {
   // Until implemented, the stubs above throw, so execution won't reach here.
   void carRows; void saRows; void qaRows;
   throw new Error('Real data merging not yet implemented');
+}
+
+// ── Agent list ────────────────────────────────────────────────────────────────
+
+/**
+ * TODO: Fetch the agent roster from Talkdesk.
+ *
+ * Endpoint (verify in Talkdesk API docs):
+ *   GET https://api.talkdeskapp.com/users/v2/users?role=agent
+ *
+ * Example skeleton:
+ *   const resp = await tdFetch('/users/v2/users?role=agent&per_page=100');
+ *   const { users } = await resp.json();
+ *   return users.map((u: any) => ({ id: u.id, name: `${u.first_name} ${u.last_name}` }));
+ */
+export async function fetchAgents(): Promise<AgentSummary[]> {
+  if (process.env.USE_MOCK_DATA === 'true') {
+    return generateAgentList();
+  }
+  throw new Error('Agent roster API not yet implemented — set USE_MOCK_DATA=true');
+}
+
+// ── Per-agent metrics ─────────────────────────────────────────────────────────
+
+/**
+ * TODO: Fetch metrics for a single agent, filtered by agent ID.
+ *
+ * All three Talkdesk APIs (Reporting, WFM, QM) accept an agent_id filter.
+ * Add `agent_id: agentId` to each request body / query string.
+ *
+ * Example skeleton (Reporting API):
+ *   const resp = await tdFetch('/data/v1/contacts/report', {
+ *     method: 'POST',
+ *     body: JSON.stringify({
+ *       filters: { date_range: { from, to }, agent_id: agentId },
+ *       group_by: ['week'],
+ *       metrics: ['answered', 'abandoned'],
+ *     }),
+ *   });
+ */
+export async function fetchAgentMetrics(agentId: string): Promise<AgentData> {
+  if (process.env.USE_MOCK_DATA === 'true') {
+    return generateAgentData(agentId);
+  }
+  void dateRange();
+  throw new Error('Per-agent metrics API not yet implemented — set USE_MOCK_DATA=true');
 }
