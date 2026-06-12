@@ -1,134 +1,126 @@
 # CS Metrics Dashboard
 
-A private Next.js dashboard that pulls Call Acceptance Rate, Schedule Adherence, and QA Score from Talkdesk and displays them as KPI cards, a 26-week heatmap, and monthly charts — for every agent and for the team as a whole.
+Live Talkdesk metrics — Call Acceptance Rate, Schedule Adherence, and QA Score — for every agent and the team as a whole. Runs locally on your Mac.
 
 ---
 
-## Quick start (sample data, no API needed)
+## Before you start — two one-time installs
 
-If you just want to run the app and see how it looks before connecting Talkdesk:
+You only need to do this once, ever.
 
-```bash
-git clone https://github.com/legertom/cs-metrics-dashboard.git
-cd cs-metrics-dashboard
-cp .env.local.example .env.local   # USE_MOCK_DATA=true is already set
-npm install
-npm run dev
-```
+**1. Node.js**
+Download the **LTS** installer from [nodejs.org](https://nodejs.org) and run it. Click through the defaults.
 
-Open **http://localhost:3000** in your browser. You'll see realistic sample data for 24 agents.
+**2. GitHub Desktop**
+Download from [desktop.github.com](https://desktop.github.com) and install it. Sign in with your GitHub account.
 
 ---
 
-## Connecting to live Talkdesk data
+## Get the app onto your Mac
 
-### Step 1 — Prerequisites
+1. Open **GitHub Desktop**.
+2. Click **File → Clone Repository…**
+3. Click the **URL** tab.
+4. Paste: `https://github.com/legertom/cs-metrics-dashboard.git`
+5. Choose a folder on your Mac (e.g. your Documents folder).
+6. Click **Clone**.
 
-- [Node.js 18 or later](https://nodejs.org/) — run `node -v` to check. If you don't have it, download the LTS installer from nodejs.org.
-- Git — run `git --version` to check. Comes pre-installed on Mac.
+---
 
-### Step 2 — Clone the repo
+## Start the app
 
-Open **Terminal** (press `⌘ Space`, type *Terminal*, press Enter).
+1. Open **Finder** and navigate to the `cs-metrics-dashboard` folder you just cloned.
+2. Double-click **`start.command`**.
 
-```bash
-git clone https://github.com/legertom/cs-metrics-dashboard.git
-cd cs-metrics-dashboard
-npm install
+> **macOS security prompt:** The first time you open it, Mac may warn you it's from an unidentified developer. If that happens: right-click `start.command` → **Open** → **Open**. You only need to do this once.
+
+A Terminal window will open and handle everything from here:
+
+- **First run only:** it creates your credentials file and opens it in TextEdit so you can fill in your Talkdesk details (see next section).
+- After you save your credentials and press Enter, the app installs its packages and starts up.
+- Your browser opens automatically at **http://localhost:3000**.
+
+To stop the app, close the Terminal window.
+
+---
+
+## Filling in your Talkdesk credentials
+
+The first time you run `start.command`, TextEdit will open a file called `.env.local`. It looks like this:
+
+```
+TALKDESK_ACCOUNT=youraccountname
+TALKDESK_CLIENT_ID=your_client_id
+TALKDESK_CLIENT_SECRET=your_client_secret
+USE_MOCK_DATA=true
 ```
 
-### Step 3 — Create your Talkdesk API client
+Here's what to fill in:
 
-You need to generate OAuth credentials inside Talkdesk. This takes about 2 minutes.
+| Line | What to put |
+|---|---|
+| `TALKDESK_ACCOUNT` | The part of your Talkdesk login URL before `.talkdesk.com` — e.g. if you log in at `acme.talkdesk.com`, put `acme` |
+| `TALKDESK_CLIENT_ID` | From Talkdesk Admin → see steps below |
+| `TALKDESK_CLIENT_SECRET` | From Talkdesk Admin → see steps below |
+| `USE_MOCK_DATA` | Change `true` to `false` once your credentials are filled in |
+
+When you're done, **Save** the file in TextEdit (⌘S) and switch back to the Terminal window.
+
+---
+
+## Creating your Talkdesk API credentials
 
 1. Log in to Talkdesk as an Admin.
 2. Go to **Admin → Integrations → API Clients**.
 3. Click **Create new client**.
-4. Give it a name (e.g. *CS Metrics Dashboard*).
-5. Under **Scopes**, select:
-   - `contacts:read` — for Call Acceptance Rate
-   - `wfm:read` — for Schedule Adherence *(only available if your plan includes WFM)*
-   - `qm:read` — for QA Score *(only available if your plan includes QM)*
-6. Click **Save**. Talkdesk will show you a **Client ID** and **Client Secret** — copy both now. The secret is only shown once.
+4. Name it something like *CS Metrics Dashboard*.
+5. Under **Scopes**, tick:
+   - `contacts:read` — Call Acceptance Rate
+   - `wfm:read` — Schedule Adherence *(only appears if your plan includes WFM)*
+   - `qm:read` — QA Score *(only appears if your plan includes QM)*
+6. Click **Save**.
+7. Talkdesk shows you a **Client ID** and **Client Secret** — copy them into your `.env.local` file. **The secret is only shown once**, so copy it now before closing that screen.
 
-> **Plan check:** If you don't see `wfm:read` or `qm:read` in the scope list, those modules aren't on your current plan. The dashboard will still run for the metrics that are available; the others will show sample data until the modules are added.
-
-### Step 4 — Configure your environment file
-
-```bash
-cp .env.local.example .env.local
-```
-
-Open `.env.local` in any text editor (TextEdit works, or open it from Finder). Fill in your values:
-
-```
-TALKDESK_ACCOUNT=acme          ← the part before ".talkdesk.com" in your login URL
-TALKDESK_CLIENT_ID=abc123      ← from Step 3
-TALKDESK_CLIENT_SECRET=xyz789  ← from Step 3
-USE_MOCK_DATA=false             ← change this line from "true" to "false"
-```
-
-Save and close the file.
-
-> **Security note:** `.env.local` is listed in `.gitignore` — it will never be committed or pushed to GitHub. Your credentials stay on your machine only.
-
-### Step 5 — Start the app
-
-```bash
-npm run dev
-```
-
-Open **http://localhost:3000**. The dashboard will fetch 26 weeks of real data from Talkdesk on page load. Use the **Refresh** button at any time to pull the latest numbers.
+> If `wfm:read` or `qm:read` don't appear in the scope list, those modules aren't on your current plan. The other metrics will still work; those two will show sample data until the modules are added.
 
 ---
 
-## Pages
+## Your credentials are private and will never be shared
 
-| URL | What you'll find |
+The credentials file (`.env.local`) is listed in the app's `.gitignore` file. This means Git automatically ignores it — it will never be included when the app is updated or backed up to GitHub. Only you have it, and it stays on your Mac.
+
+You never need to do anything to protect it. It's handled automatically.
+
+---
+
+## Starting the app on future days
+
+Just double-click **`start.command`** again. It goes straight to starting the server — no setup steps repeat.
+
+---
+
+## What you'll see
+
+| Page | Description |
 |---|---|
-| `/` | Team-level KPI cards, 26-week Performance Pulse heatmap, and monthly charts |
-| `/agents` | All 24 agents in a sortable, filterable table with Copy and View buttons |
-| `/agents/[name]` | Individual agent view — same KPI cards, heatmap, and charts scoped to one person |
+| **Dashboard** (`/`) | Team KPI cards, 26-week Performance Pulse heatmap, monthly charts |
+| **Agents** (`/agents`) | All agents in a sortable table — filter by status, metric, or name |
+| **Agent detail** (`/agents/…`) | Individual agent view with their own heatmap and charts |
 
----
-
-## Filters on the Agents page
-
-The filter bar at the top of `/agents` has three independent controls:
-
-- **Search** — type any part of an agent's name
-- **Status** — All / On Track (all metrics ≥ 85%) / Needs Attention (any metric < 85%)
-- **Below target** — show only agents where a specific metric is under the 85% threshold
-
-Filters combine. The count on the right ("5 of 24") updates live.
-
----
-
-## Switching back to sample data
-
-Set `USE_MOCK_DATA=true` in `.env.local` and restart the dev server. Useful if you want to demo the dashboard without an internet connection.
+Use the **Refresh** button (top right of any page) to pull fresh data from Talkdesk without restarting.
 
 ---
 
 ## Troubleshooting
 
-**"Missing Talkdesk credentials" error**
-→ Make sure you created `.env.local` (not just `.env.local.example`) and that `USE_MOCK_DATA=false`.
+**The app shows sample data instead of real data**
+→ Open `.env.local` in TextEdit and check that `USE_MOCK_DATA=false` and your credentials are filled in (no placeholder text remaining). Save, then click Refresh in the browser.
 
-**Metrics show sample data even with `USE_MOCK_DATA=false`**
-→ The real API fetch functions have TODO stubs that throw until implemented. Check the terminal output for the specific error. Common causes: wrong account name, expired credentials, or a plan that doesn't include WFM/QM.
+**"Missing Talkdesk credentials" error in the Terminal window**
+→ Same as above — `.env.local` is missing a value.
 
-**Port 3000 already in use**
-→ Next.js will automatically use port 3001 (or the next available port) and print the URL in the terminal.
+**The browser doesn't open automatically**
+→ Manually go to **http://localhost:3000** in your browser.
 
-**`npm install` fails**
-→ Make sure you're inside the `cs-metrics-dashboard` folder (`cd cs-metrics-dashboard`) before running the command.
-
----
-
-## Tech stack
-
-- [Next.js 15](https://nextjs.org/) (App Router, TypeScript)
-- [Tailwind CSS 3](https://tailwindcss.com/)
-- [Recharts](https://recharts.org/) for charts
-- Talkdesk OAuth 2.0 client credentials flow — token cached server-side, refreshed 60 s before expiry
+**`start.command` won't open**
+→ Right-click it → **Open** → **Open** (macOS security step, one time only).
