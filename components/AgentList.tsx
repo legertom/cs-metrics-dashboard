@@ -47,7 +47,38 @@ function CopyButton({ agent }: { agent: AgentSummary }) {
 
 const TARGET = 85;
 
-type SortKey = 'name' | 'callAcceptanceRate' | 'scheduleAdherence' | 'qaScore';
+type SortKey    = 'name' | 'callAcceptanceRate' | 'scheduleAdherence' | 'qaScore';
+type StatusFilter = 'all' | 'on-track' | 'needs-attention';
+type MetricFilter = 'all' | 'callAcceptanceRate' | 'scheduleAdherence' | 'qaScore';
+
+function isOnTrack(s: AgentSummary['summary']) {
+  return (
+    s.callAcceptanceRate.current >= TARGET &&
+    s.scheduleAdherence.current  >= TARGET &&
+    s.qaScore.current            >= TARGET
+  );
+}
+
+function Pill({
+  active, onClick, children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+        active
+          ? 'bg-blue-600 text-white'
+          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
 function badge(value: number) {
   const ok = value >= TARGET;
@@ -95,20 +126,37 @@ const COLS: { key: SortKey; label: string }[] = [
 ];
 
 export default function AgentList({ agents }: { agents: AgentSummary[] }) {
-  const [sortKey, setSortKey] = useState<SortKey>('qaScore');
-  const [sortAsc, setSortAsc] = useState(false);
+  const [sortKey, setSortKey]       = useState<SortKey>('qaScore');
+  const [sortAsc, setSortAsc]       = useState(false);
+  const [search, setSearch]         = useState('');
+  const [statusF, setStatusF]       = useState<StatusFilter>('all');
+  const [metricF, setMetricF]       = useState<MetricFilter>('all');
 
   function toggleSort(key: SortKey) {
     if (key === sortKey) setSortAsc((a) => !a);
     else { setSortKey(key); setSortAsc(false); }
   }
 
-  const sorted = [...agents].sort((a, b) => {
+  const filtered = agents
+    .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
+    .filter((a) => {
+      if (statusF === 'on-track')        return isOnTrack(a.summary);
+      if (statusF === 'needs-attention') return !isOnTrack(a.summary);
+      return true;
+    })
+    .filter((a) => {
+      if (metricF === 'all') return true;
+      return a.summary[metricF].current < TARGET;
+    });
+
+  const sorted = [...filtered].sort((a, b) => {
     const av = sortKey === 'name' ? a.name : a.summary[sortKey].current;
     const bv = sortKey === 'name' ? b.name : b.summary[sortKey].current;
     const cmp = typeof av === 'string' ? av.localeCompare(bv as string) : (av as number) - (bv as number);
     return sortAsc ? cmp : -cmp;
   });
+
+  const anyActive = search !== '' || statusF !== 'all' || metricF !== 'all';
 
   function SortIcon({ col }: { col: SortKey }) {
     if (col !== sortKey) return <span className="text-slate-700 ml-1">↕</span>;
@@ -116,7 +164,60 @@ export default function AgentList({ agents }: { agents: AgentSummary[] }) {
   }
 
   return (
-    <div className="bg-[#111e33] border border-slate-700/50 rounded-xl overflow-hidden">
+    <div className="space-y-3">
+      {/* Filter bar */}
+      <div className="bg-[#111e33] border border-slate-700/50 rounded-xl px-4 py-3 flex flex-wrap items-center gap-4">
+        {/* Search */}
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search agents…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 w-44 transition-colors"
+          />
+        </div>
+
+        {/* Status */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-slate-500 mr-0.5">Status</span>
+          <Pill active={statusF === 'all'}               onClick={() => setStatusF('all')}>All</Pill>
+          <Pill active={statusF === 'on-track'}          onClick={() => setStatusF('on-track')}>On Track</Pill>
+          <Pill active={statusF === 'needs-attention'}   onClick={() => setStatusF('needs-attention')}>Needs Attention</Pill>
+        </div>
+
+        {/* Metric below target */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-slate-500 mr-0.5">Below target</span>
+          <Pill active={metricF === 'all'}                onClick={() => setMetricF('all')}>Any</Pill>
+          <Pill active={metricF === 'callAcceptanceRate'} onClick={() => setMetricF('callAcceptanceRate')}>Call Acc.</Pill>
+          <Pill active={metricF === 'scheduleAdherence'}  onClick={() => setMetricF('scheduleAdherence')}>Sched. Adh.</Pill>
+          <Pill active={metricF === 'qaScore'}            onClick={() => setMetricF('qaScore')}>QA Score</Pill>
+        </div>
+
+        {/* Result count + clear */}
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-[11px] text-slate-500 tabular-nums">
+            {sorted.length} of {agents.length}
+          </span>
+          {anyActive && (
+            <button
+              onClick={() => { setSearch(''); setStatusF('all'); setMetricF('all'); }}
+              className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-[#111e33] border border-slate-700/50 rounded-xl overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-700/50">
@@ -139,7 +240,13 @@ export default function AgentList({ agents }: { agents: AgentSummary[] }) {
           </tr>
         </thead>
         <tbody>
-          {sorted.map((agent, i) => (
+          {sorted.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="px-5 py-10 text-center text-sm text-slate-500">
+                No agents match the current filters.
+              </td>
+            </tr>
+          ) : sorted.map((agent, i) => (
             <tr
               key={agent.id}
               className={`border-b border-slate-800/60 hover:bg-white/[0.03] transition-colors ${
@@ -186,6 +293,7 @@ export default function AgentList({ agents }: { agents: AgentSummary[] }) {
           ))}
         </tbody>
       </table>
+    </div>
     </div>
   );
 }
