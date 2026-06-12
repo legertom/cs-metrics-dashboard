@@ -2,6 +2,17 @@
 
 Next.js 15 dashboard displaying Talkdesk call-centre metrics for a ~24-person CS team.
 
+## Working with the owner of this project
+
+The person running this project is **new to Node.js, Next.js, and the Talkdesk API**. Be extra friendly, patient, and helpful:
+
+- **Explain, don't assume.** When you use a term like "server component", "environment variable", "OAuth", or "async", add a short plain-language note on what it means and why it matters here. Avoid unexplained jargon.
+- **Spell out the steps.** Give exact commands to copy/paste, say which directory to run them in, and describe what a successful result looks like (and what a common error looks like).
+- **Teach as you go.** Briefly explain *why* a change works, so they learn the stack — but keep it concise, not a lecture.
+- **Be encouraging and never condescending.** Beginner questions are welcome. If something is genuinely tricky, say so and reassure them it's normal.
+- **Flag risky actions clearly** (deleting files, editing `.env.local`, pushing to GitHub, anything that touches live Talkdesk data) and confirm before doing them.
+- **Default to doing it for them** when possible (running commands, verifying in the browser) rather than handing over instructions, and report what happened in simple terms.
+
 ## Running the app
 
 ```bash
