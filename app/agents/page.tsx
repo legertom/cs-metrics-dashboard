@@ -1,13 +1,20 @@
-import { fetchAgents } from '@/lib/talkdesk';
+import { fetchAgents, useMockData } from '@/lib/talkdesk';
 import Sidebar from '@/components/Sidebar';
 import AgentList from '@/components/AgentList';
+import SampleDataBanner from '@/components/SampleDataBanner';
+import ErrorState from '@/components/ErrorState';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AgentsPage() {
-  const agents = await fetchAgents();
+  let agents;
+  try {
+    agents = await fetchAgents();
+  } catch (err) {
+    return <ErrorState message={(err as Error).message} />;
+  }
 
-  const onTrack    = agents.filter((a) =>
+  const onTrack = agents.filter((a) =>
     a.summary.callAcceptanceRate.current >= 85 &&
     a.summary.scheduleAdherence.current  >= 85 &&
     a.summary.qaScore.current            >= 85,
@@ -18,6 +25,7 @@ export default async function AgentsPage() {
     <div className="flex min-h-screen bg-[#0d1526] text-slate-100">
       <Sidebar />
       <main className="ml-[220px] flex-1 p-8">
+        {useMockData() && <SampleDataBanner />}
         <div className="mb-8">
           <h1 className="text-xl font-bold text-white">Agents</h1>
           <p className="text-slate-500 text-xs mt-1">

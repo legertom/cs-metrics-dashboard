@@ -9,6 +9,7 @@ import {
 import type { AgentData, KpiSummary, MonthlyDataPoint } from '@/lib/types';
 import Sidebar from '@/components/Sidebar';
 import PerformancePulse from '@/components/PerformancePulse';
+import SampleDataBanner from '@/components/SampleDataBanner';
 
 function deltaStyle(delta: number) {
   return delta >= 0 ? 'text-emerald-400' : 'text-red-400';
@@ -118,7 +119,7 @@ function Charts({ monthly }: { monthly: MonthlyDataPoint[] }) {
   );
 }
 
-export default function AgentDashboard({ initialData }: { initialData: AgentData }) {
+export default function AgentDashboard({ initialData, isMock }: { initialData: AgentData; isMock: boolean }) {
   const [data, setData] = useState<AgentData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -139,6 +140,7 @@ export default function AgentDashboard({ initialData }: { initialData: AgentData
     <div className="flex min-h-screen bg-[#0d1526] text-slate-100">
       <Sidebar />
       <main className="ml-[220px] flex-1 p-8 overflow-y-auto">
+        {isMock && <SampleDataBanner />}
         {/* Breadcrumb + header */}
         <div className="mb-1">
           <Link href="/agents" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
-import { fetchAgentMetrics } from '@/lib/talkdesk';
+import { fetchAgentMetrics, useMockData } from '@/lib/talkdesk';
 import AgentDashboard from '@/components/AgentDashboard';
+import ErrorState from '@/components/ErrorState';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,9 +9,9 @@ export default async function AgentPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   try {
     const data = await fetchAgentMetrics(id);
-    return <AgentDashboard initialData={data} />;
+    return <AgentDashboard initialData={data} isMock={useMockData()} />;
   } catch (err) {
     if ((err as Error).message.includes('Unknown agent')) notFound();
-    throw err;
+    return <ErrorState message={(err as Error).message} />;
   }
 }

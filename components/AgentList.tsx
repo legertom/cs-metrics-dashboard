@@ -4,6 +4,54 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { AgentSummary } from '@/lib/types';
 
+const TARGET = 85;
+
+// ── CSV export ──────────────────────────────────────────────────────────────
+
+const CSV_HEADERS = [
+  'Agent',
+  'Call Acceptance %', 'Call Acceptance Δ (pp)',
+  'Schedule Adherence %', 'Schedule Adherence Δ (pp)',
+  'QA Score %', 'QA Score Δ (pp)',
+  'Avg Call Volume / wk',
+  'Status',
+];
+
+// Wrap a cell in quotes and escape embedded quotes so commas/quotes/newlines
+// in names (e.g. "Ryan O'Brien") survive Excel / Google Sheets import.
+function csvCell(value: string | number): string {
+  return `"${String(value).replace(/"/g, '""')}"`;
+}
+
+function buildCsv(agents: AgentSummary[]): string {
+  const rows = agents.map((a) => {
+    const s = a.summary;
+    return [
+      a.name,
+      s.callAcceptanceRate.current.toFixed(1), s.callAcceptanceRate.delta.toFixed(1),
+      s.scheduleAdherence.current.toFixed(1),  s.scheduleAdherence.delta.toFixed(1),
+      s.qaScore.current.toFixed(1),            s.qaScore.delta.toFixed(1),
+      a.avgCallVolume,
+      isOnTrack(s) ? 'On Track' : 'Needs Attention',
+    ].map(csvCell).join(',');
+  });
+  return [CSV_HEADERS.map(csvCell).join(','), ...rows].join('\r\n');
+}
+
+function downloadCsv(agents: AgentSummary[]) {
+  const date = new Date().toISOString().split('T')[0];
+  // Prepend a UTF-8 BOM so Excel renders the Δ / accented characters correctly.
+  const blob = new Blob(['﻿' + buildCsv(agents)], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `cs-agents-${date}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 function buildClipboardText(agent: AgentSummary): string {
   const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const fmt  = (k: AgentSummary['summary']['qaScore']) =>
@@ -44,8 +92,6 @@ function CopyButton({ agent }: { agent: AgentSummary }) {
     </button>
   );
 }
-
-const TARGET = 85;
 
 type SortKey    = 'name' | 'callAcceptanceRate' | 'scheduleAdherence' | 'qaScore';
 type StatusFilter = 'all' | 'on-track' | 'needs-attention';
@@ -200,7 +246,7 @@ export default function AgentList({ agents }: { agents: AgentSummary[] }) {
           <Pill active={metricF === 'qaScore'}            onClick={() => setMetricF('qaScore')}>QA Score</Pill>
         </div>
 
-        {/* Result count + clear */}
+        {/* Result count + clear + export */}
         <div className="ml-auto flex items-center gap-3">
           <span className="text-[11px] text-slate-500 tabular-nums">
             {sorted.length} of {agents.length}
@@ -213,6 +259,18 @@ export default function AgentList({ agents }: { agents: AgentSummary[] }) {
               Clear
             </button>
           )}
+          <button
+            onClick={() => downloadCsv(sorted)}
+            disabled={sorted.length === 0}
+            title={anyActive ? 'Download the filtered rows as CSV' : 'Download all rows as CSV'}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-[11px] font-medium text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+            </svg>
+            Download CSV
+          </button>
         </div>
       </div>
 

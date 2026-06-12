@@ -8,6 +8,7 @@ import {
 import type { DashboardData, KpiSummary, MonthlyDataPoint } from '@/lib/types';
 import Sidebar from '@/components/Sidebar';
 import PerformancePulse from '@/components/PerformancePulse';
+import SampleDataBanner from '@/components/SampleDataBanner';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -127,7 +128,7 @@ function Charts({ monthly }: { monthly: MonthlyDataPoint[] }) {
 
 // ── Root component ────────────────────────────────────────────────────────────
 
-export default function Dashboard({ initialData }: { initialData: DashboardData }) {
+export default function Dashboard({ initialData, isMock }: { initialData: DashboardData; isMock: boolean }) {
   const [data, setData] = useState<DashboardData>(initialData);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -148,6 +149,7 @@ export default function Dashboard({ initialData }: { initialData: DashboardData 
     <div className="flex min-h-screen bg-[#0d1526] text-slate-100">
       <Sidebar />
       <main className="ml-[220px] flex-1 p-8 overflow-y-auto">
+        {isMock && <SampleDataBanner />}
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-xl font-bold text-white">Team Performance</h1>
