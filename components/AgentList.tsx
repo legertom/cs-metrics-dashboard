@@ -4,6 +4,47 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { AgentSummary } from '@/lib/types';
 
+function buildClipboardText(agent: AgentSummary): string {
+  const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const fmt  = (k: AgentSummary['summary']['qaScore']) =>
+    `${k.current.toFixed(1)}% (${k.delta >= 0 ? '+' : ''}${k.delta.toFixed(1)} pp)`;
+  const allOk =
+    agent.summary.callAcceptanceRate.current >= 85 &&
+    agent.summary.scheduleAdherence.current  >= 85 &&
+    agent.summary.qaScore.current            >= 85;
+  return [
+    `${agent.name} — ${date}`,
+    `Call Acceptance:    ${fmt(agent.summary.callAcceptanceRate)}`,
+    `Schedule Adherence: ${fmt(agent.summary.scheduleAdherence)}`,
+    `QA Score:           ${fmt(agent.summary.qaScore)}`,
+    `Avg Call Volume:    ${agent.avgCallVolume}/wk`,
+    `Status: ${allOk ? 'On Track' : 'Needs Attention'}`,
+  ].join('\n');
+}
+
+function CopyButton({ agent }: { agent: AgentSummary }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(buildClipboardText(agent));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`text-xs px-2 py-1 rounded transition-all ${
+        copied
+          ? 'text-emerald-400 bg-emerald-400/10'
+          : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700/50'
+      }`}
+    >
+      {copied ? '✓ Copied' : 'Copy'}
+    </button>
+  );
+}
+
 const TARGET = 85;
 
 type SortKey = 'name' | 'callAcceptanceRate' | 'scheduleAdherence' | 'qaScore';
@@ -131,12 +172,15 @@ export default function AgentList({ agents }: { agents: AgentSummary[] }) {
               </td>
               <td className="px-5 py-3.5">{statusChip(agent.summary)}</td>
               <td className="px-5 py-3.5 text-right">
-                <Link
-                  href={`/agents/${agent.id}`}
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  View →
-                </Link>
+                <div className="flex items-center justify-end gap-3">
+                  <CopyButton agent={agent} />
+                  <Link
+                    href={`/agents/${agent.id}`}
+                    className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  >
+                    View →
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}
